@@ -3,8 +3,8 @@ pipeline {
 
     environment {
         JIRA_ISSUE = 'DEVOPS-1'
-        JIRA_SITE = 'your-site.atlassian.net'
-        DOCKER_IMAGE = 'yourdockerhubusername/devops-assignment-app'
+        JIRA_SITE = 'https://waleedo020.atlassian.net/'
+        DOCKER_IMAGE = 'theboss123/devops-assignment-app'
         DOCKER_CREDS = 'dockerhub'
     }
 
