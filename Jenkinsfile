@@ -75,7 +75,7 @@ pipeline {
                             '''
                         } else {
                             bat '''
-                            echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin
+                            powershell -NoProfile -Command "$env:DOCKER_PASS | docker login -u $env:DOCKER_USER --password-stdin"
                             if errorlevel 1 exit /b 1
                             docker push %DOCKER_IMAGE%:%BUILD_NUMBER%
                             if errorlevel 1 exit /b 1
