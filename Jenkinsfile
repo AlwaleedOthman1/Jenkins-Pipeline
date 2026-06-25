@@ -214,6 +214,7 @@ pipeline {
 
                         curl -fsS http://localhost:3000/health > /dev/null
                         tools/apache-jmeter-${JMETER_VERSION}/bin/jmeter -n -t test/load-test.jmx -l reports/jmeter/results.jtl -e -o reports/jmeter/html
+                        (cd reports/jmeter && zip -r jmeter-html-report.zip html)
                         '''
                     } else {
                         powershell '''
@@ -245,6 +246,8 @@ pipeline {
                             $jmeterBin = "tools/apache-jmeter-$env:JMETER_VERSION/bin/jmeter.bat"
                             & $jmeterBin -n -t 'test/load-test.jmx' -l 'reports/jmeter/results.jtl' -e -o 'reports/jmeter/html'
                             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+                            Compress-Archive -Path 'reports/jmeter/html/*' -DestinationPath 'reports/jmeter/jmeter-html-report.zip' -Force
                         } finally {
                             if ($app -and -not $app.HasExited) {
                                 Stop-Process -Id $app.Id -Force
