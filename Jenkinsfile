@@ -23,7 +23,7 @@ pipeline {
     agent any
 
     environment {
-        JIRA_ISSUE = 'DEVOPS-1'
+        JIRA_ISSUE = 'DEVOPS-2'
         JIRA_BASE_URL = 'https://waleedo020.atlassian.net'
         JIRA_SITE = 'waleedo020.atlassian.net'
         JIRA_CREDS = 'jira-cloud'
