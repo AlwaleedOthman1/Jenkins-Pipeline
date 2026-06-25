@@ -1,4 +1,31 @@
+def detectJiraIssue() {
+    def sources = [env.BRANCH_NAME, env.GIT_BRANCH, env.CHANGE_BRANCH].findAll { it }
+
+    for (source in sources) {
+        def matcher = source =~ /([A-Z][A-Z0-9]+-[0-9]+)/
+        if (matcher.find()) {
+            return matcher.group(1)
+        }
+    }
+
+    def commitMessage = isUnix()
+        ? sh(script: 'git log -1 --pretty=%B', returnStdout: true).trim()
+        : powershell(script: 'git log -1 --pretty=%B', returnStdout: true).trim()
+
+    def matcher = commitMessage =~ /^([A-Z][A-Z0-9]+-[0-9]+)\b|\b([A-Z][A-Z0-9]+-[0-9]+)\b/
+    if (matcher.find()) {
+        return matcher.group(1) ?: matcher.group(2)
+    }
+
+    error 'No Jira issue key found. Start the commit message or branch name with an issue key, for example: DEVOPS-4 update pipeline.'
+}
+
 def jiraRestComment(String message) {
+    if (!env.JIRA_ISSUE?.trim()) {
+        echo 'No Jira issue key detected; skipping Jira comment.'
+        return
+    }
+
     catchError(buildResult: 'UNSTABLE', stageResult: 'UNSTABLE') {
         withCredentials([usernamePassword(
             credentialsId: "${env.JIRA_CREDS}",
@@ -19,11 +46,33 @@ def jiraRestComment(String message) {
     }
 }
 
+def jiraMoveToInProgressIfNeeded() {
+    if (!env.JIRA_ISSUE?.trim()) {
+        echo 'No Jira issue key detected; skipping Jira transition.'
+        return
+    }
+
+    catchError(buildResult: 'UNSTABLE', stageResult: 'UNSTABLE') {
+        withCredentials([usernamePassword(
+            credentialsId: "${env.JIRA_CREDS}",
+            usernameVariable: 'JIRA_USER',
+            passwordVariable: 'JIRA_TOKEN'
+        )]) {
+            if (isUnix()) {
+                sh 'node scripts/transition-jira-issue.js'
+            } else {
+                powershell '''
+                node scripts/transition-jira-issue.js
+                if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+                '''
+            }
+        }
+    }
+}
 pipeline {
     agent any
 
     environment {
-        JIRA_ISSUE = 'DEVOPS-4'
         JIRA_BASE_URL = 'https://waleedo020.atlassian.net'
         JIRA_SITE = 'waleedo020.atlassian.net'
         JIRA_CREDS = 'jira-cloud'
@@ -40,6 +89,23 @@ pipeline {
         stage('Checkout') {
             steps {
                 checkout scm
+            }
+        }
+
+        stage('Detect Jira Issue') {
+            steps {
+                script {
+                    env.JIRA_ISSUE = detectJiraIssue()
+                    echo "Detected Jira issue: ${env.JIRA_ISSUE}"
+                }
+            }
+        }
+
+        stage('Jira Update - Move To In Progress') {
+            steps {
+                script {
+                    jiraMoveToInProgressIfNeeded()
+                }
             }
         }
 

@@ -92,3 +92,14 @@ Required Jenkins plugins:
 - Performance Plugin
 
 The Jenkins agent also needs Java available because JMeter runs on Java.
+## Jira Issue Detection
+
+The pipeline detects the Jira issue key from the branch name or latest commit message. Put the issue key at the start of your commit message, for example:
+
+```powershell
+git commit -m "DEVOPS-4 update Jenkins pipeline"
+```
+
+After checkout, Jenkins uses the detected issue key for Jira comments. If the issue is currently `New` or `To Do`, the pipeline attempts to move it to `In Progress` or `Under Progress` using Jira REST API transitions.
+
+The Jira credential user must have permission to browse the issue, add comments, and transition the issue.
